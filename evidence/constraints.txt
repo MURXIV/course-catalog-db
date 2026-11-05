@@ -1,0 +1,76 @@
+PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit
+Each statement below ran independently, outside an explicit transaction.
+
+-- NULL title
+INSERT INTO courses (id,title,description,credits) VALUES ('x-test',NULL,'Test',3);
+SQLSTATE: 23502
+null value in column "title" of relation "courses" violates not-null constraint
+DETAIL:  Failing row contains (x-test, null, Test, 3, f, 0).
+Constraint or column: title
+
+-- Zero credits
+INSERT INTO courses (id,title,description,credits) VALUES ('x-test','Test','Test',0);
+SQLSTATE: 23514
+new row for relation "courses" violates check constraint "courses_credits_check"
+DETAIL:  Failing row contains (x-test, Test, Test, 0, f, 0).
+Constraint or column: courses_credits_check
+
+-- Negative likes
+UPDATE courses SET likes=-1 WHERE id='api-design';
+SQLSTATE: 23514
+new row for relation "courses" violates check constraint "courses_likes_check"
+DETAIL:  Failing row contains (api-design, API Design: REST vs GraphQL, Comparing REST and GraphQL in one hands-on project., 4, t, -1).
+Constraint or column: courses_likes_check
+
+-- Short name
+INSERT INTO students (name,email) VALUES ('A','a@example.com');
+SQLSTATE: 23514
+new row for relation "students" violates check constraint "students_name_check"
+DETAIL:  Failing row contains (4, A, a@example.com).
+Constraint or column: students_name_check
+
+-- Duplicate email
+INSERT INTO students (name,email) VALUES ('Dup Student','aigerim@example.com');
+SQLSTATE: 23505
+duplicate key value violates unique constraint "students_email_key"
+DETAIL:  Key (email)=(aigerim@example.com) already exists.
+Constraint or column: students_email_key
+
+-- Duplicate course ID
+INSERT INTO courses (id,title,description,credits) VALUES ('api-design','x','y',1);
+SQLSTATE: 23505
+duplicate key value violates unique constraint "courses_pkey"
+DETAIL:  Key (id)=(api-design) already exists.
+Constraint or column: courses_pkey
+
+-- Duplicate enrollment
+INSERT INTO enrollments (course_id,student_id) VALUES ('modern-frontend',1);
+SQLSTATE: 23505
+duplicate key value violates unique constraint "enrollments_course_id_student_id_key"
+DETAIL:  Key (course_id, student_id)=(modern-frontend, 1) already exists.
+Constraint or column: enrollments_course_id_student_id_key
+
+-- Missing course
+INSERT INTO enrollments (course_id,student_id) VALUES ('no-such-course',1);
+SQLSTATE: 23503
+insert or update on table "enrollments" violates foreign key constraint "enrollments_course_id_fkey"
+DETAIL:  Key (course_id)=(no-such-course) is not present in table "courses".
+Constraint or column: enrollments_course_id_fkey
+
+-- Missing student
+INSERT INTO enrollments (course_id,student_id) VALUES ('web-security',999);
+SQLSTATE: 23503
+insert or update on table "enrollments" violates foreign key constraint "enrollments_student_id_fkey"
+DETAIL:  Key (student_id)=(999) is not present in table "students".
+Constraint or column: enrollments_student_id_fkey
+
+-- Delete enrolled course
+DELETE FROM courses WHERE id='modern-frontend';
+SQLSTATE: 23001
+update or delete on table "courses" violates RESTRICT setting of foreign key constraint "enrollments_course_id_fkey" on table "enrollments"
+DETAIL:  Key (id)=(modern-frontend) is referenced from table "enrollments".
+Constraint or column: enrollments_course_id_fkey
+
+-- ON DELETE CASCADE, inside BEGIN / ROLLBACK
+DELETE students.id=1: 1 student deleted; remaining enrollments for student 1: 0.
+ROLLBACK: student restored and both enrollments restored. No SQLSTATE error.
