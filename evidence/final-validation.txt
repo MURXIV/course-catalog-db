@@ -1,0 +1,185 @@
+PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE INDEX
+
+INSERT 0 6
+INSERT 0 3
+INSERT 0 6
+
+queries.sql run 1: SUCCESS; every stored row unchanged.
+       id        |              title               | credits | likes 
+-----------------+----------------------------------+---------+-------
+ modern-frontend | Modern Frontend: React & Next.js |       5 |    24
+ web-security    | Web Security Essentials          |       4 |    21
+ backend-fastapi | Backend Foundations: FastAPI     |       5 |    19
+(3 rows)
+
+          id          |              title               | credits | likes 
+----------------------+----------------------------------+---------+-------
+ databases-postgresql | Relational Databases: PostgreSQL |       5 |    15
+(1 row)
+
+     id     |            title            | credits | is_elective | likes 
+------------+-----------------------------+---------+-------------+-------
+ api-design | API Design: REST vs GraphQL |       4 | t           |    11
+(1 row)
+
+ id | title | credits | is_elective | likes 
+----+-------+---------+-------------+-------
+(0 rows)
+
+BEGIN
+     id     | likes 
+------------+-------
+ api-design |    12
+(1 row)
+
+UPDATE 1
+ id | likes 
+----+-------
+(0 rows)
+
+UPDATE 0
+ROLLBACK
+BEGIN
+ id |  course_id   | student_id 
+----+--------------+------------
+  7 | web-security |          3
+(1 row)
+
+INSERT 0 1
+ROLLBACK
+ id |     student      |              course              
+----+------------------+----------------------------------
+  1 | Aigerim Sadykova | Modern Frontend: React & Next.js
+  2 | Aigerim Sadykova | AI/LLM Integration
+  3 | Daniyar Bekov    | Modern Frontend: React & Next.js
+  4 | Daniyar Bekov    | Backend Foundations: FastAPI
+  5 | Daniyar Bekov    | AI/LLM Integration
+  6 | Asel Omarova     | AI/LLM Integration
+(6 rows)
+
+          id          | enrolled 
+----------------------+----------
+ ai-integration       |        3
+ modern-frontend      |        2
+ backend-fastapi      |        1
+ api-design           |        0
+ databases-postgresql |        0
+ web-security         |        0
+(6 rows)
+
+
+queries.sql run 2: SUCCESS; every stored row unchanged.
+       id        |              title               | credits | likes 
+-----------------+----------------------------------+---------+-------
+ modern-frontend | Modern Frontend: React & Next.js |       5 |    24
+ web-security    | Web Security Essentials          |       4 |    21
+ backend-fastapi | Backend Foundations: FastAPI     |       5 |    19
+(3 rows)
+
+          id          |              title               | credits | likes 
+----------------------+----------------------------------+---------+-------
+ databases-postgresql | Relational Databases: PostgreSQL |       5 |    15
+(1 row)
+
+     id     |            title            | credits | is_elective | likes 
+------------+-----------------------------+---------+-------------+-------
+ api-design | API Design: REST vs GraphQL |       4 | t           |    11
+(1 row)
+
+ id | title | credits | is_elective | likes 
+----+-------+---------+-------------+-------
+(0 rows)
+
+BEGIN
+     id     | likes 
+------------+-------
+ api-design |    12
+(1 row)
+
+UPDATE 1
+ id | likes 
+----+-------
+(0 rows)
+
+UPDATE 0
+ROLLBACK
+BEGIN
+ id |  course_id   | student_id 
+----+--------------+------------
+  8 | web-security |          3
+(1 row)
+
+INSERT 0 1
+ROLLBACK
+ id |     student      |              course              
+----+------------------+----------------------------------
+  1 | Aigerim Sadykova | Modern Frontend: React & Next.js
+  2 | Aigerim Sadykova | AI/LLM Integration
+  3 | Daniyar Bekov    | Modern Frontend: React & Next.js
+  4 | Daniyar Bekov    | Backend Foundations: FastAPI
+  5 | Daniyar Bekov    | AI/LLM Integration
+  6 | Asel Omarova     | AI/LLM Integration
+(6 rows)
+
+          id          | enrolled 
+----------------------+----------
+ ai-integration       |        3
+ modern-frontend      |        2
+ backend-fastapi      |        1
+ api-design           |        0
+ databases-postgresql |        0
+ web-security         |        0
+(6 rows)
+
+
+Assertions passed: row counts 6/3/6; all rows unchanged across two query runs; api-design likes=11; pagination and all six statistics rows match the assignment.
+                 Table "public.courses"
+   Column    |  Type   | Collation | Nullable | Default 
+-------------+---------+-----------+----------+---------
+ id          | text    |           | not null | 
+ title       | text    |           | not null | 
+ description | text    |           | not null | 
+ credits     | integer |           | not null | 
+ is_elective | boolean |           | not null | false
+ likes       | integer |           | not null | 0
+Indexes:
+    "courses_pkey" PRIMARY KEY, btree (id)
+Check constraints:
+    "courses_credits_check" CHECK (credits > 0)
+    "courses_likes_check" CHECK (likes >= 0)
+Referenced by:
+    TABLE "enrollments" CONSTRAINT "enrollments_course_id_fkey" FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE RESTRICT
+
+                        Table "public.students"
+ Column |  Type  | Collation | Nullable |           Default            
+--------+--------+-----------+----------+------------------------------
+ id     | bigint |           | not null | generated always as identity
+ name   | text   |           | not null | 
+ email  | text   |           | not null | 
+Indexes:
+    "students_pkey" PRIMARY KEY, btree (id)
+    "students_email_key" UNIQUE CONSTRAINT, btree (email)
+Check constraints:
+    "students_name_check" CHECK (char_length(name) >= 2)
+Referenced by:
+    TABLE "enrollments" CONSTRAINT "enrollments_student_id_fkey" FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+
+                                  Table "public.enrollments"
+   Column    |           Type           | Collation | Nullable |           Default            
+-------------+--------------------------+-----------+----------+------------------------------
+ id          | bigint                   |           | not null | generated always as identity
+ course_id   | text                     |           | not null | 
+ student_id  | bigint                   |           | not null | 
+ enrolled_at | timestamp with time zone |           | not null | now()
+Indexes:
+    "enrollments_pkey" PRIMARY KEY, btree (id)
+    "enrollments_course_id_student_id_key" UNIQUE CONSTRAINT, btree (course_id, student_id)
+    "enrollments_student_id_idx" btree (student_id)
+Foreign-key constraints:
+    "enrollments_course_id_fkey" FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE RESTRICT
+    "enrollments_student_id_fkey" FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
