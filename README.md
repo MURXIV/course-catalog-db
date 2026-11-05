@@ -136,3 +136,38 @@ CREATE INDEX enrollments_student_id_idx ON enrollments(student_id);
 EXPLAIN ANALYZE SELECT * FROM enrollments WHERE student_id = 777;
 -- Repeat three times again. Execution times vary by machine and cache state.
 ```
+
+## Transaction
+
+Scenario: enroll Madina Ospanova in a course using two inserts. Tested with two
+independent database connections, A (writer) and B (observer). Actual observations
+are in [evidence/transaction.txt](evidence/transaction.txt).
+
+- A began a transaction and inserted Madina. The second insert referenced
+  `no-such-course`, failed with SQLSTATE 23503, and aborted the transaction.
+  A subsequent SELECT failed with 25P02 (current transaction is aborted).
+  After ROLLBACK, Madina's count was 0: the first insert was undone as well.
+- In a new transaction A inserted Madina and enrolled her in `web-security`.
+  B saw count 0 before COMMIT and count 1 after COMMIT. The final totals were
+  4 students and 7 enrollments. Default isolation was `read committed`.
+- Without a transaction, the first insert would commit independently. A failed
+  second insert would leave a student without the intended enrollment.
+
+To reproduce, start two psql sessions connected to `course_catalog`.
+For the failure case, execute in A:
+
+```sql
+BEGIN;
+INSERT INTO students(name,email) VALUES ('Madina Ospanova','madina@example.com');
+INSERT INTO enrollments(course_id,student_id)
+SELECT 'no-such-course',id FROM students WHERE email='madina@example.com';
+SELECT count(*) FROM students; -- expected 25P02
+ROLLBACK;
+SELECT count(*) FROM students WHERE email='madina@example.com'; -- 0
+```
+
+For the successful case, begin and run both inserts in A, using `web-security`
+instead of `no-such-course`. Before committing, run the last count query in B:
+it returns 0. COMMIT in A, then repeat in B: it returns 1. Finally rebuild with
+schema.sql and seed.sql to restore the 6/3/6 dataset. Keep transactions short:
+they hold locks until committed or rolled back.

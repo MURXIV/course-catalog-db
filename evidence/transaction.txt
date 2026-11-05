@@ -1,0 +1,11 @@
+PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit
+Two independent PostgreSQL connections A and B.
+A: BEGIN; insert student succeeds; invalid enrollment fails.
+SQLSTATE 23503: insert or update on table "enrollments" violates foreign key constraint "enrollments_course_id_fkey"
+DETAIL:  Key (course_id)=(no-such-course) is not present in table "courses".
+Subsequent SELECT: SQLSTATE 25P02: current transaction is aborted, commands ignored until end of transaction block
+After ROLLBACK: Madina count = 0; first insert also undone.
+A: BEGIN; both valid inserts succeed.
+B before A COMMIT: Madina count = 0.
+B after A COMMIT: Madina count = 1; totals: 4 students, 7 enrollments.
+Isolation: read committed
