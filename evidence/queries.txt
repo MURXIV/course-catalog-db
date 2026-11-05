@@ -1,0 +1,61 @@
+id        |              title               | credits | likes 
+-----------------+----------------------------------+---------+-------
+ modern-frontend | Modern Frontend: React & Next.js |       5 |    24
+ web-security    | Web Security Essentials          |       4 |    21
+ backend-fastapi | Backend Foundations: FastAPI     |       5 |    19
+(3 rows)
+
+          id          |              title               | credits | likes 
+----------------------+----------------------------------+---------+-------
+ databases-postgresql | Relational Databases: PostgreSQL |       5 |    15
+(1 row)
+
+     id     |            title            | credits | is_elective | likes 
+------------+-----------------------------+---------+-------------+-------
+ api-design | API Design: REST vs GraphQL |       4 | t           |    11
+(1 row)
+
+ id | title | credits | is_elective | likes 
+----+-------+---------+-------------+-------
+(0 rows)
+
+BEGIN
+     id     | likes 
+------------+-------
+ api-design |    12
+(1 row)
+
+UPDATE 1
+ id | likes 
+----+-------
+(0 rows)
+
+UPDATE 0
+ROLLBACK
+BEGIN
+ id |  course_id   | student_id 
+----+--------------+------------
+  7 | web-security |          3
+(1 row)
+
+INSERT 0 1
+ROLLBACK
+ id |     student      |              course              
+----+------------------+----------------------------------
+  1 | Aigerim Sadykova | Modern Frontend: React & Next.js
+  2 | Aigerim Sadykova | AI/LLM Integration
+  3 | Daniyar Bekov    | Modern Frontend: React & Next.js
+  4 | Daniyar Bekov    | Backend Foundations: FastAPI
+  5 | Daniyar Bekov    | AI/LLM Integration
+  6 | Asel Omarova     | AI/LLM Integration
+(6 rows)
+
+          id          | enrolled 
+----------------------+----------
+ ai-integration       |        3
+ modern-frontend      |        2
+ backend-fastapi      |        1
+ api-design           |        0
+ databases-postgresql |        0
+ web-security         |        0
+(6 rows)
