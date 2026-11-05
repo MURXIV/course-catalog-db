@@ -62,3 +62,77 @@ automatically produced by PostgreSQL.
 Pydantic checks incoming API data and gives early feedback, but scripts, another
 application or direct SQL can bypass the API. Database constraints protect every
 write regardless of its source, including concurrent requests.
+
+## Index: EXPLAIN before and after
+
+In `idx_demo`, loaded 500 courses, 20,000 students and 50,000 enrollments.
+Query: `SELECT * FROM enrollments WHERE student_id = 777;`.
+Each timing is the minimum of three real EXPLAIN ANALYZE runs on this laptop.
+All six runs and the other lookup plans are in [evidence/index.txt](evidence/index.txt).
+
+| Measurement | Before index | After index |
+|---|---|---|
+| Access method | Seq Scan on enrollments | Bitmap Heap Scan on enrollments |
+| Estimated cost | 0.00..1042.00 | 4.31..15.59 |
+| Rows removed by filter | 49997 | 0 (no filter scan) |
+| Execution time | 1.838 ms | 0.016 ms |
+
+Before:
+
+```text
+Seq Scan on enrollments  (cost=0.00..1042.00 rows=3 width=34)
+  Filter: (student_id = 777)
+```
+
+After:
+
+```text
+Bitmap Heap Scan on enrollments  (cost=4.31..15.59 rows=3 width=34)
+  Recheck Cond: (student_id = 777)
+  ->  Bitmap Index Scan on enrollments_student_id_idx  (cost=0.00..4.31 rows=3 width=0)
+        Index Cond: (student_id = 777)
+```
+
+Table size: 3336 kB; added index size: 896 kB.
+
+1. PRIMARY KEY and UNIQUE create indexes automatically; FOREIGN KEY does
+   not create an index on its referencing column. The unique pair
+   `(course_id, student_id)` serves searches by its leading `course_id` column;
+   on this dataset it did not replace a dedicated student lookup index.
+   Email lookup used `students_email_key`, and course lookup used
+   `enrollments_course_id_student_id_key`.
+2. Six course rows fit in a very small table. Sequential access costs less than
+   going through an index. The student lookup otherwise scans 50,000 enrollment
+   rows, so a selective index saves work. The planner chooses by estimated cost,
+   not simply by whether an index exists.
+3. The index speeds up listing a student's enrollments and finding their child
+   rows when a student is deleted with CASCADE. It uses storage and makes writes
+   maintain another index, so unnecessary indexes should be avoided.
+
+Small main-table lookup after ANALYZE:
+
+```text
+Seq Scan on courses  (cost=0.00..1.07 rows=1 width=100)
+  Filter: (id = 'api-design'::text)
+```
+
+To repeat the index experiment after the final schema includes the index:
+
+```bash
+psql -h localhost -U catalog_app -d idx_demo -v ON_ERROR_STOP=1 -f schema.sql
+psql -h localhost -U catalog_app -d idx_demo -v ON_ERROR_STOP=1 -c "DROP INDEX enrollments_student_id_idx;"
+psql -h localhost -U catalog_app -d idx_demo -v ON_ERROR_STOP=1 -f experiments/idx_data.sql
+psql -h localhost -U catalog_app -d idx_demo
+```
+
+Then compare in psql:
+
+```sql
+EXPLAIN SELECT * FROM students WHERE email = 'student777@example.com';
+EXPLAIN SELECT * FROM enrollments WHERE course_id = 'course-7';
+EXPLAIN ANALYZE SELECT * FROM enrollments WHERE student_id = 777;
+-- Run the previous statement three times; record the minimum Execution Time.
+CREATE INDEX enrollments_student_id_idx ON enrollments(student_id);
+EXPLAIN ANALYZE SELECT * FROM enrollments WHERE student_id = 777;
+-- Repeat three times again. Execution times vary by machine and cache state.
+```

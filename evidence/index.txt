@@ -1,0 +1,77 @@
+PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit
+
+Email lookup:
+Index Scan using students_email_key on students  (cost=0.29..8.30 rows=1 width=45)
+  Index Cond: (email = 'student777@example.com'::text)
+
+Course lookup:
+Bitmap Heap Scan on enrollments  (cost=5.19..241.01 rows=100 width=34)
+  Recheck Cond: (course_id = 'course-7'::text)
+  ->  Bitmap Index Scan on enrollments_course_id_student_id_key  (cost=0.00..5.17 rows=100 width=0)
+        Index Cond: (course_id = 'course-7'::text)
+
+Before:
+Seq Scan on enrollments  (cost=0.00..1042.00 rows=3 width=34)
+  Filter: (student_id = 777)
+
+Seq Scan on enrollments  (cost=0.00..1042.00 rows=3 width=34) (actual time=0.040..1.907 rows=3.00 loops=1)
+  Filter: (student_id = 777)
+  Rows Removed by Filter: 49997
+  Buffers: shared hit=417
+Planning Time: 0.023 ms
+Execution Time: 1.912 ms
+
+Seq Scan on enrollments  (cost=0.00..1042.00 rows=3 width=34) (actual time=0.037..1.843 rows=3.00 loops=1)
+  Filter: (student_id = 777)
+  Rows Removed by Filter: 49997
+  Buffers: shared hit=417
+Planning Time: 0.034 ms
+Execution Time: 1.849 ms
+
+Seq Scan on enrollments  (cost=0.00..1042.00 rows=3 width=34) (actual time=0.035..1.832 rows=3.00 loops=1)
+  Filter: (student_id = 777)
+  Rows Removed by Filter: 49997
+  Buffers: shared hit=417
+Planning Time: 0.032 ms
+Execution Time: 1.838 ms
+
+After:
+Bitmap Heap Scan on enrollments  (cost=4.31..15.59 rows=3 width=34)
+  Recheck Cond: (student_id = 777)
+  ->  Bitmap Index Scan on enrollments_student_id_idx  (cost=0.00..4.31 rows=3 width=0)
+        Index Cond: (student_id = 777)
+
+Bitmap Heap Scan on enrollments  (cost=4.31..15.59 rows=3 width=34) (actual time=0.051..0.053 rows=3.00 loops=1)
+  Recheck Cond: (student_id = 777)
+  Heap Blocks: exact=3
+  Buffers: shared hit=6 read=2
+  ->  Bitmap Index Scan on enrollments_student_id_idx  (cost=0.00..4.31 rows=3 width=0) (actual time=0.043..0.043 rows=3.00 loops=1)
+        Index Cond: (student_id = 777)
+        Index Searches: 1
+        Buffers: shared hit=3 read=2
+Planning Time: 0.035 ms
+Execution Time: 0.059 ms
+
+Bitmap Heap Scan on enrollments  (cost=4.31..15.59 rows=3 width=34) (actual time=0.009..0.010 rows=3.00 loops=1)
+  Recheck Cond: (student_id = 777)
+  Heap Blocks: exact=3
+  Buffers: shared hit=5
+  ->  Bitmap Index Scan on enrollments_student_id_idx  (cost=0.00..4.31 rows=3 width=0) (actual time=0.004..0.005 rows=3.00 loops=1)
+        Index Cond: (student_id = 777)
+        Index Searches: 1
+        Buffers: shared hit=2
+Planning Time: 0.029 ms
+Execution Time: 0.016 ms
+
+Bitmap Heap Scan on enrollments  (cost=4.31..15.59 rows=3 width=34) (actual time=0.010..0.011 rows=3.00 loops=1)
+  Recheck Cond: (student_id = 777)
+  Heap Blocks: exact=3
+  Buffers: shared hit=5
+  ->  Bitmap Index Scan on enrollments_student_id_idx  (cost=0.00..4.31 rows=3 width=0) (actual time=0.005..0.005 rows=3.00 loops=1)
+        Index Cond: (student_id = 777)
+        Index Searches: 1
+        Buffers: shared hit=2
+Planning Time: 0.031 ms
+Execution Time: 0.017 ms
+
+Table size: 3336 kB; student index size: 896 kB
