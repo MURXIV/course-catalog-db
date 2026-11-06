@@ -1,0 +1,59 @@
+DROP TABLE
+CREATE TABLE
+INSERT 0 6
+ id |   student_name   |    course_id    |           course_title           
+----+------------------+-----------------+----------------------------------
+  1 | Aigerim Sadykova | modern-frontend | Modern Frontend: React & Next.js
+  2 | Aigerim Sadykova | ai-integration  | AI/LLM Integration
+  3 | Daniyar Bekov    | modern-frontend | Modern Frontend: React & Next.js
+  4 | Daniyar Bekov    | backend-fastapi | Backend Foundations: FastAPI
+  5 | Daniyar Bekov    | ai-integration  | AI/LLM Integration
+  6 | Asel Omarova     | ai-integration  | AI/LLM Integration
+(6 rows)
+
+BEGIN
+UPDATE 1
+    course_id    |              course_title              
+-----------------+----------------------------------------
+ modern-frontend | Modern Frontend: React & Next.js
+ modern-frontend | Modern Frontend: React 19 & Next.js 16
+(2 rows)
+
+ROLLBACK
+BEGIN
+DELETE 1
+ id | student_name | student_email | course_id | course_title | credits 
+----+--------------+---------------+-----------+--------------+---------
+(0 rows)
+
+ROLLBACK
+BEGIN
+INSERT 0 1
+ student_name |  course_id   
+--------------+--------------
+              | web-security
+(1 row)
+
+ROLLBACK
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE INDEX
+INSERT 0 3
+INSERT 0 3
+INSERT 0 6
+       name       |              title               
+------------------+----------------------------------
+ Aigerim Sadykova | Modern Frontend: React & Next.js
+ Aigerim Sadykova | AI/LLM Integration
+ Daniyar Bekov    | Modern Frontend: React & Next.js
+ Daniyar Bekov    | Backend Foundations: FastAPI
+ Daniyar Bekov    | AI/LLM Integration
+ Asel Omarova     | AI/LLM Integration
+(6 rows)
+
+ courses | students | enrollments 
+---------+----------+-------------
+       3 |        3 |           6
+(1 row)
