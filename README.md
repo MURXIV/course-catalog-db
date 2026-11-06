@@ -245,3 +245,127 @@ See [evidence/final-validation.txt](evidence/final-validation.txt).
 Repository: https://github.com/MURXIV/course-catalog-db
 
 Submit this repository URL through the instructor's required channel.
+
+## Bonus
+
+All five optional Lab 6 tasks were implemented and run. Results are real
+PostgreSQL output in [evidence/bonus](evidence/bonus). Experiments use separate
+databases `lab6_bonus`, `lab6_bonus_norm` and `lab6_bonus_email`. They never run
+schema.sql on the `course_catalog` database now used by Lab 7.
+
+### Run all five tasks
+
+From this repository on the configured laptop:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run_bonus.ps1
+```
+
+This helper uses the sibling API project's Python environment. Independently,
+install `psycopg[binary]`, then run `python run_bonus.py`. Default connection:
+127.0.0.1:55436, application role catalog_app, admin role postgres. `--host`,
+`--port`, `--user`, `--admin-user`, `--psql` can override these. The runner uses
+psql/libpq authentication (for password authentication use PGPASSFILE). It
+creates its named experiment databases if missing and rebuilds only their lab
+tables. PostgreSQL must be running and the admin role must be able to create DBs.
+The output of every task is saved; assertions fail the run if results differ.
+
+### 1 Normalization
+
+Code: [experiments/norm_demo.sql](experiments/norm_demo.sql) and
+[experiments/normalization.sql](experiments/normalization.sql).
+Result: [1-normalization.txt](evidence/bonus/1-normalization.txt).
+
+The flat registrations table repeats student/course facts. Renaming just one
+registration produced two titles for modern-frontend (update anomaly). Deleting
+the only FastAPI registration removed all knowledge of that course (delete
+anomaly). Adding a course with no enrollment required NULL student fields
+(insert anomaly). Each test was rolled back. INSERT SELECT then split the flat
+data into 3 courses, 3 students and 6 enrollments, preserving all six relations.
+The three unrepresented courses cannot be recovered from the flat table.
+Normalized tables store courses/students once and link them by keys; a course
+can exist independently of its enrollments.
+
+### 2 Lost update and row lock
+
+Code: the two-connection experiment in [run_bonus.py](run_bonus.py).
+Result: [2-lost-update-lock.txt](evidence/bonus/2-lost-update-lock.txt).
+
+Both sessions read 11. Both wrote the computed value 12, losing one like.
+Two `SET likes = likes + 1` commands returned 12 then 13. In a real concurrent
+run, `pg_blocking_pids` confirmed that B waited for A's lock; after A committed,
+B resumed and returned 13. PostgreSQL applies the expression to the current row
+after obtaining its lock. Likes were restored to 11 afterwards.
+
+For a live two-window demonstration, open two psql sessions connected to
+`lab6_bonus` on the same host/port, then follow this order:
+
+```sql
+SELECT likes FROM courses WHERE id = 'api-design';
+```
+
+Run that in A and B (both 11), then in each window:
+
+```sql
+UPDATE courses SET likes = 12 WHERE id = 'api-design';
+```
+
+The final value is 12. Reset to 11 in A, then show the lock:
+
+```sql
+UPDATE courses SET likes = 11 WHERE id = 'api-design';
+BEGIN;
+UPDATE courses SET likes = likes + 1 WHERE id = 'api-design' RETURNING likes;
+```
+
+In B:
+
+```sql
+UPDATE courses SET likes = likes + 1 WHERE id = 'api-design' RETURNING likes;
+```
+
+B waits. In A run `COMMIT;`: B returns 13. Finally reset to 11 in either window.
+The BEGIN/update portion is also [lock_a.sql](experiments/lock_a.sql); B's update
+is [lock_b.sql](experiments/lock_b.sql). Run these in interactive psql sessions;
+a standalone psql -f that exits would roll back the open transaction in A.
+
+### 3 SQL injection and parameters
+
+Code: [experiments/sql_injection.sql](experiments/sql_injection.sql).
+Result: [3-sql-injection.txt](evidence/bonus/3-sql-injection.txt).
+
+The concatenation example `WHERE id = 'x' OR '1'='1'` returned all 6 courses.
+PREPARE keeps `$1` as a value, separate from SQL syntax: the exact attack string
+returned 0 rows, while api-design returned 1. Quotes and OR in a parameter are
+data, not executable parts of the condition. The prepared statement was freed
+with DEALLOCATE afterwards.
+
+### 4 Courses without enrollments and HAVING
+
+The two queries are appended to [queries.sql](queries.sql); a short standalone
+version is [experiments/bonus_queries.sql](experiments/bonus_queries.sql).
+Result: [4-extra-queries.txt](evidence/bonus/4-extra-queries.txt).
+
+LEFT JOIN plus `e.id IS NULL` returned api-design, databases-postgresql and
+web-security, alphabetically. GROUP BY plus `HAVING count(*) > 1` returned
+Daniyar Bekov with 3 courses and Aigerim Sadykova with 2. WHERE filters rows
+before grouping; HAVING filters the resulting groups. The full queries.sql was
+also run twice and all stored rows remained unchanged.
+
+### 5 ALTER TABLE email rule
+
+Code: [experiments/email_rule.sql](experiments/email_rule.sql).
+Result: [5-alter-email.txt](evidence/bonus/5-alter-email.txt).
+
+On a populated copy of the old schema, ALTER TABLE added the named CHECK
+`students_email_format` using `position('@' IN email) > 1`. The invalid address
+no-at-sign was rejected with SQLSTATE 23514; all 3 existing students remained.
+This rule is also in the final schema.sql, so rebuilding produces the same rule.
+It checks only the lab's @ condition, not every rule of email syntax.
+The test script temporarily allows its one expected SQL error and then restores
+ON_ERROR_STOP. The main API database was left unchanged.
+
+Historical mandatory-task evidence above predates this optional CHECK; the
+additional constraint is intentional. Do not replace Lab 7's database schema
+with this Lab 6 teaching schema. See [BONUS_DEFENSE_RU.md](BONUS_DEFENSE_RU.md)
+for the short demonstration order in Russian.
