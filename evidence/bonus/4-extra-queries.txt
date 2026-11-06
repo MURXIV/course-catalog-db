@@ -1,0 +1,12 @@
+id          
+----------------------
+ api-design
+ databases-postgresql
+ web-security
+(3 rows)
+
+       name       | courses 
+------------------+---------
+ Daniyar Bekov    |       3
+ Aigerim Sadykova |       2
+(2 rows)
