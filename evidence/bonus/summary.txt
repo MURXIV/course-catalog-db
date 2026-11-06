@@ -1,0 +1,8 @@
+All five Lab 6 bonus tasks passed.
+Normalization: 3 courses / 3 students / 6 enrollments.
+Lost update: 12; atomic update and observed row lock: 13.
+Injection: 6 rows; parameter payload: 0; valid parameter: 1.
+Extra queries match expected results.
+Email rule: SQLSTATE 23514 / students_email_format.
+queries.sql ran twice without changing stored rows.
+Working course_catalog database was never modified.

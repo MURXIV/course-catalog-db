@@ -1,0 +1,5 @@
+A reads 11; B reads 11. A writes 12; B writes 12. Final likes: 12 (one update lost).
+Atomic SQL increments: A returns 12; B returns 13. Both likes preserved.
+pg_blocking_pids confirmed: session B waits for the lock held by session A.
+A COMMIT released the lock. B resumed and returned 13, using the current value.
+Restored likes to 11.

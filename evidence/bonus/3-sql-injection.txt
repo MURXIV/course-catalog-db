@@ -1,0 +1,21 @@
+id          |              title               
+----------------------+----------------------------------
+ modern-frontend      | Modern Frontend: React & Next.js
+ backend-fastapi      | Backend Foundations: FastAPI
+ databases-postgresql | Relational Databases: PostgreSQL
+ web-security         | Web Security Essentials
+ ai-integration       | AI/LLM Integration
+ api-design           | API Design: REST vs GraphQL
+(6 rows)
+
+PREPARE
+ id | title 
+----+-------
+(0 rows)
+
+     id     |            title            
+------------+-----------------------------
+ api-design | API Design: REST vs GraphQL
+(1 row)
+
+DEALLOCATE
