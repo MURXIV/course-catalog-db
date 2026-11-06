@@ -1,0 +1,22 @@
+ALTER TABLE
+                        Table "public.students"
+ Column |  Type  | Collation | Nullable |           Default            
+--------+--------+-----------+----------+------------------------------
+ id     | bigint |           | not null | generated always as identity
+ name   | text   |           | not null | 
+ email  | text   |           | not null | 
+Indexes:
+    "students_pkey" PRIMARY KEY, btree (id)
+    "students_email_key" UNIQUE CONSTRAINT, btree (email)
+Check constraints:
+    "students_email_format" CHECK (POSITION(('@'::text) IN (email)) > 1)
+    "students_name_check" CHECK (char_length(name) >= 2)
+Referenced by:
+    TABLE "enrollments" CONSTRAINT "enrollments_student_id_fkey" FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+
+psql:C:/Users/timat/OneDrive/Рабочий стол/New folder/сессия мессия/course-catalog-db/experiments/email_rule.sql:4: ERROR:  23514: new row for relation "students" violates check constraint "students_email_format"
+DETAIL:  Failing row contains (4, Test User, no-at-sign).
+SCHEMA NAME:  public
+TABLE NAME:  students
+CONSTRAINT NAME:  students_email_format
+LOCATION:  ExecConstraints, execMain.c:2081
